@@ -23,31 +23,21 @@ if [ ! -f "$STATE_FILE" ] || grep -q "First_Run=True" "$STATE_FILE"; then
     # Directory contenente i file di configurazione
     cd /etc/yum.repos.d/
 
-    # File cuda.repo
-    CUDA_REPO_FILE="cuda.repo"
-    if [ -f "$CUDA_REPO_FILE" ]; then
-        # Sostituisci http con https
-        sudo sed -i 's|baseurl=http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64|baseurl=https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64|' "$CUDA_REPO_FILE"
-        echo "Updated $CUDA_REPO_FILE successfully."
-    else
-        echo "$CUDA_REPO_FILE not found."
-    fi
+echo "Updating all .repo files: converting HTTP baseurls to HTTPS..."
 
-    # File yum.oracle.com_repo_OracleLinux_OL7_developer_EPEL_x86_64.repo
-    EPEL_REPO_FILE="yum.oracle.com_repo_OracleLinux_OL7_developer_EPEL_x86_64.repo"
-    if [ -f "$EPEL_REPO_FILE" ]; then
-        # Sostituisci http con https
-        sudo sed -i 's|baseurl=http://yum.oracle.com/repo/OracleLinux/OL7/developer_EPEL/x86_64|baseurl=https://yum.oracle.com/repo/OracleLinux/OL7/developer_EPEL/x86_64|' "$EPEL_REPO_FILE"
-        echo "Updated $EPEL_REPO_FILE successfully."
-    else
-        echo "$EPEL_REPO_FILE not found."
+for repo_file in *.repo; do
+    if grep -q "baseurl=http://" "$repo_file"; then
+        echo " - Updating $repo_file"
+        sudo sed -i 's|baseurl=http://|baseurl=https://|g' "$repo_file"
     fi
+done
 
-    echo "Repository URLs updated successfully."
+echo "All matching repository URLs updated to HTTPS."
 
 
     sudo yum install -y openssh-server
     ssh-keygen -b 4096 -f $HOME/.ssh/ssh_host_rsa_key -t rsa -N ""
+    ssh-keygen -b 4096 -f $HOME/.ssh/ssh_host_rsa_key -t ed25519 -N ""
     sudo ssh-keygen -A
     cat $HOME/.ssh/ssh_host_rsa_key.pub >> $HOME/.ssh/authorized_keys
     cat $HOME/.ssh/ssh_host_rsa_key
